@@ -47,25 +47,26 @@ def handler(event: dict, context) -> dict:
             action = body.get('action')
 
             if action == 'register':
-                email = (body.get('email') or '').strip().lower()
+                username = (body.get('username') or '').strip().lower()
                 full_name = (body.get('full_name') or '').strip()
                 password = body.get('password') or ''
                 department = (body.get('department') or '').strip()
                 phone = (body.get('phone') or '').strip()
 
-                if not email or not full_name or not password:
+                if not username or not full_name or not password:
                     return {'statusCode': 400, 'headers': cors,
                             'body': json.dumps({'error': 'Заполните все обязательные поля'})}
 
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+                    cur.execute("SELECT id FROM users WHERE username = %s", (username,))
                     if cur.fetchone():
                         return {'statusCode': 409, 'headers': cors,
-                                'body': json.dumps({'error': 'Пользователь с таким email уже существует'})}
+                                'body': json.dumps({'error': 'Это имя пользователя уже занято'})}
                     cur.execute(
-                        "INSERT INTO users (email, full_name, password_hash, department, phone) "
-                        "VALUES (%s, %s, %s, %s, %s) RETURNING id, email, full_name, department, phone",
-                        (email, full_name, hash_password(password), department, phone)
+                        "INSERT INTO users (username, email, full_name, password_hash, department, phone) "
+                        "VALUES (%s, %s, %s, %s, %s, %s) "
+                        "RETURNING id, username, email, full_name, department, phone",
+                        (username, username, full_name, hash_password(password), department, phone)
                     )
                     user = cur.fetchone()
                 token = make_token(user['id'])
@@ -73,17 +74,17 @@ def handler(event: dict, context) -> dict:
                         'body': json.dumps({'token': token, 'user': dict(user)})}
 
             if action == 'login':
-                email = (body.get('email') or '').strip().lower()
+                username = (body.get('username') or '').strip().lower()
                 password = body.get('password') or ''
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute(
-                        "SELECT id, email, full_name, department, phone, password_hash "
-                        "FROM users WHERE email = %s", (email,)
+                        "SELECT id, username, email, full_name, department, phone, password_hash "
+                        "FROM users WHERE username = %s", (username,)
                     )
                     user = cur.fetchone()
                 if not user or user['password_hash'] != hash_password(password):
                     return {'statusCode': 401, 'headers': cors,
-                            'body': json.dumps({'error': 'Неверный email или пароль'})}
+                            'body': json.dumps({'error': 'Неверное имя пользователя или пароль'})}
                 token = make_token(user['id'])
                 user_data = {k: v for k, v in user.items() if k != 'password_hash'}
                 return {'statusCode': 200, 'headers': cors,
@@ -100,7 +101,7 @@ def handler(event: dict, context) -> dict:
                         'body': json.dumps({'error': 'Не авторизован'})}
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT id, email, full_name, department, phone FROM users WHERE id = %s",
+                    "SELECT id, username, email, full_name, department, phone FROM users WHERE id = %s",
                     (user_id,)
                 )
                 user = cur.fetchone()

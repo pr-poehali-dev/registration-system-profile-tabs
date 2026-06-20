@@ -12,7 +12,8 @@ const PASSES_URL = 'https://functions.poehali.dev/494dbb30-6b3b-4487-b0d3-179a72
 
 interface User {
   id: number;
-  email: string;
+  username: string;
+  email?: string;
   full_name: string;
   department?: string;
   phone?: string;
@@ -115,7 +116,7 @@ export default function Index() {
 
 function AuthScreen({ onAuth }: { onAuth: (u: User, t: string) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', department: '', phone: '' });
+  const [form, setForm] = useState({ username: '', password: '', full_name: '', department: '', phone: '' });
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: FormEvent) => {
@@ -185,8 +186,8 @@ function AuthScreen({ onAuth }: { onAuth: (u: User, t: string) => void }) {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@company.ru" />
+              <Label>Имя пользователя</Label>
+              <Input required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="ivan_petrov" />
             </div>
             <div className="space-y-2">
               <Label>Пароль</Label>
@@ -334,7 +335,7 @@ function PassesTab({ token }: { token: string }) {
 
 function ProfileTab({ user }: { user: User }) {
   const rows = [
-    { icon: 'Mail', label: 'Email', value: user.email },
+    { icon: 'AtSign', label: 'Имя пользователя', value: user.username },
     { icon: 'Building2', label: 'Отдел', value: user.department || '—' },
     { icon: 'Phone', label: 'Телефон', value: user.phone || '—' },
   ];
